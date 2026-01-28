@@ -7,6 +7,12 @@ import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
 import jwtConfig from './config/jwt.config';
 import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/user/user.module';
+import { SiteModule } from './modules/site/site.module';
+import { WalletModule } from './modules/wallet/wallet.module';
+import { TicketModule } from './modules/ticket/ticket.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { ThrottleGuard } from './common/guards/throttle.guard';
@@ -37,6 +43,12 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
       inject: [ConfigService],
     }),
     AuthModule,
+    UserModule,
+    SiteModule,
+    WalletModule,
+    TicketModule,
+    AdminModule,
+    AnalyticsModule,
   ],
   controllers: [],
   providers: [
