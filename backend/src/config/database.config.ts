@@ -1,5 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { join } from 'path';
 
 export default registerAs(
   'database',
@@ -10,10 +11,10 @@ export default registerAs(
     username: process.env.DB_USERNAME || 'skiss',
     password: process.env.DB_PASSWORD || 'skiss123',
     database: process.env.DB_DATABASE || 'skiss_db',
-    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+    entities: [join(__dirname, '..', '**', '*.entity{.ts,.js}')],
     synchronize: process.env.NODE_ENV === 'development',
     logging: process.env.NODE_ENV === 'development',
-    migrations: [__dirname + '/../migrations/**/*{.ts,.js}'],
+    migrations: [join(__dirname, '..', 'database', 'migrations', '*{.ts,.js}')],
     migrationsRun: false,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   }),
