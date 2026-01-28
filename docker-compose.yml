@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: skiss_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: skiss
+      POSTGRES_USER: skiss_user
+      POSTGRES_PASSWORD: your_secure_password_here
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - skiss_network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: skiss_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - skiss_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: skiss_backend
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8000:8000"
+    networks:
+      - skiss_network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: skiss_frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    ports:
+      - "5173:5173"
+    networks:
+      - skiss_network
+
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: skiss_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - skiss_network
+
+  # Queue Worker
+  queue:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: skiss_queue
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan queue:work --tries=3
+    volumes:
+      - ./backend:/var/www
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - skiss_network
+
+  # Scheduler (Cron)
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: skiss_scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan schedule:work
+    volumes:
+      - ./backend:/var/www
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - skiss_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  skiss_network:
+    driver: bridge
