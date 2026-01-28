@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
   # PostgreSQL Database
@@ -7,52 +7,70 @@ services:
     container_name: skiss_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: skiss
-      POSTGRES_USER: skiss_user
-      POSTGRES_PASSWORD: your_secure_password_here
+      POSTGRES_DB: ${DB_DATABASE:-skiss}
+      POSTGRES_USER: ${DB_USERNAME:-skiss_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     networks:
       - skiss_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-skiss_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis Cache & Queue
   redis:
     image: redis:7-alpine
     container_name: skiss_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     networks:
       - skiss_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Backend API
+  # Backend API (NestJS)
   backend:
     build:
       context: ./backend
       dockerfile: ../docker/Dockerfile.backend
     container_name: skiss_backend
     restart: unless-stopped
-    working_dir: /var/www
+    working_dir: /app
     volumes:
-      - ./backend:/var/www
-      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./backend:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
     environment:
+      - NODE_ENV=${NODE_ENV:-development}
       - DB_HOST=postgres
       - REDIS_HOST=redis
+    env_file:
+      - .env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-3000}:3000"
     networks:
       - skiss_network
+    command: npm run start:dev
 
-  # Frontend
+  # Frontend (React + Vite)
   frontend:
     build:
       context: ./frontend
@@ -63,13 +81,14 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000/api
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000/api}
     ports:
-      - "5173:5173"
+      - "${VITE_PORT:-5173}:5173"
     networks:
       - skiss_network
+    command: npm run dev -- --host
 
-  # Nginx Web Server
+  # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: skiss_nginx
@@ -78,9 +97,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./backend:/var/www
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d
-      - ./docker/nginx/ssl:/etc/nginx/ssl
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
       - frontend
@@ -94,32 +113,22 @@ services:
       dockerfile: ../docker/Dockerfile.backend
     container_name: skiss_queue
     restart: unless-stopped
-    working_dir: /var/www
-    command: php artisan queue:work --tries=3
+    working_dir: /app
     volumes:
-      - ./backend:/var/www
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    env_file:
+      - .env
     depends_on:
       - postgres
       - redis
     networks:
       - skiss_network
-
-  # Scheduler (Cron)
-  scheduler:
-    build:
-      context: ./backend
-      dockerfile: ../docker/Dockerfile.backend
-    container_name: skiss_scheduler
-    restart: unless-stopped
-    working_dir: /var/www
-    command: php artisan schedule:work
-    volumes:
-      - ./backend:/var/www
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - skiss_network
+    command: npm run queue:work
 
 volumes:
   postgres_data:
