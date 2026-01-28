@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
@@ -24,6 +24,7 @@ export class LoginDto {
     example: '123456',
     required: false,
   })
+  @IsOptional()
   @IsString()
   twoFactorCode?: string;
 }

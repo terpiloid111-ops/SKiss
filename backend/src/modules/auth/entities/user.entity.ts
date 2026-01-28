@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   Index,
   BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
@@ -79,10 +80,14 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  private passwordChanged = false;
+
   @BeforeInsert()
+  @BeforeUpdate()
   async hashPassword() {
-    if (this.password) {
+    if (this.password && (this.passwordChanged || !this.id)) {
       this.password = await bcrypt.hash(this.password, 10);
+      this.passwordChanged = false;
     }
   }
 
@@ -92,5 +97,10 @@ export class User {
 
   async hashRefreshToken(token: string) {
     this.refreshToken = await bcrypt.hash(token, 10);
+  }
+
+  setPassword(password: string) {
+    this.password = password;
+    this.passwordChanged = true;
   }
 }

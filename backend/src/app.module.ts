@@ -30,7 +30,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => [
         {
-          ttl: parseInt(configService.get('THROTTLE_TTL', '60'), 10) * 1000,
+          ttl: parseInt(configService.get('THROTTLE_TTL', '60'), 10),
           limit: parseInt(configService.get('THROTTLE_LIMIT', '10'), 10),
         },
       ],

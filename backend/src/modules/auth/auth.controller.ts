@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -32,7 +32,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.authService.validateUser(loginDto.usernameOrEmail, loginDto.password);
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new UnauthorizedException('Invalid credentials');
     }
     return this.authService.login(user, loginDto.twoFactorCode);
   }
@@ -65,11 +65,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully', type: AuthResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
-  async refreshTokens(
-    @Body('userId') userId: string,
-    @Body('refreshToken') refreshToken: string,
-  ): Promise<AuthResponseDto> {
-    return this.authService.refreshTokens(userId, refreshToken);
+  async refreshTokens(@Body('refreshToken') refreshToken: string): Promise<AuthResponseDto> {
+    return this.authService.refreshTokens(refreshToken);
   }
 
   @Post('logout')
@@ -79,6 +76,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 200, description: 'User successfully logged out' })
   async logout(@CurrentUser() user: User): Promise<{ success: boolean }> {
+    await this.authService.logout(user.id);
     return { success: true };
   }
 }

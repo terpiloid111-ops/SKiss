@@ -129,25 +129,30 @@ export class AuthService {
     return { success: true };
   }
 
-  async refreshTokens(userId: string, refreshToken: string): Promise<AuthResponseDto> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user || !user.refreshToken) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
+  async refreshTokens(refreshToken: string): Promise<AuthResponseDto> {
     try {
       const payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('jwt.refreshSecret'),
       });
 
-      if (payload.sub !== userId) {
+      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      if (!user || !user.refreshToken) {
         throw new UnauthorizedException('Invalid refresh token');
       }
+
+      const isValidToken = await user.validatePassword(refreshToken);
+      if (!isValidToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      return this.generateTokens(user);
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+  }
 
-    return this.generateTokens(user);
+  async logout(userId: string): Promise<void> {
+    await this.userRepository.update(userId, { refreshToken: null });
   }
 
   private async generateTokens(user: User): Promise<AuthResponseDto> {
