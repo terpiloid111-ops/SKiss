@@ -1,64 +1,116 @@
-# Environment files
-.env
-.env.local
-.env.*.local
+# 🤝 Руководство по внесению вклада в SKiss
 
-# Dependencies
-node_modules/
-vendor/
-bower_components/
+Спасибо за интерес к проекту! Мы ценим любой вклад.
 
-# Build outputs
-dist/
-build/
-public/hot
-public/storage
-storage/*.key
+## 📋 Процесс разработки
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
+1. **Fork** репозиторий
+2. Создайте **feature branch** (`git checkout -b feature/AmazingFeature`)
+3. **Commit** изменения (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** в branch (`git push origin feature/AmazingFeature`)
+5. Откройте **Pull Request**
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-logs/
+## 🎯 Соглашения о коде
 
-# Testing
-coverage/
-.nyc_output/
-phpunit.xml
-.phpunit.result.cache
+### Backend (PHP/Laravel)
+- Следуйте PSR-12 стандарту
+- Используйте type hints
+- Пишите PHPDoc комментарии
+- Покрытие тестами минимум 70%
 
-# Database
-*.sqlite
-*.sqlite3
+```php
+/**
+ * Create a new user site
+ *
+ * @param CreateSiteRequest $request
+ * @return JsonResponse
+ */
+public function store(CreateSiteRequest $request): JsonResponse
+{
+    // Implementation
+}
+```
 
-# Temporary files
-tmp/
-temp/
-*.tmp
+### Frontend (React)
+- Используйте TypeScript
+- Functional components + Hooks
+- ESLint + Prettier
+- Именование: PascalCase для компонентов, camelCase для функций
 
-# OS
-Thumbs.db
-.DS_Store
+```typescript
+interface UserSiteProps {
+  siteId: string;
+  domain: string;
+}
 
-# Docker
-docker-compose.override.yml
+const UserSite: React.FC<UserSiteProps> = ({ siteId, domain }) => {
+  // Implementation
+}
+```
 
-# Backup
-*.backup
-*.bak
-*.old
+### Git Commits
+Используйте Conventional Commits:
 
-# Keys and certificates
-*.pem
-*.key
-*.crt
-ssl/
+```
+feat: добавлена система реферальных ссылок
+fix: исправлена ошибка вывода BTC
+docs: обновлена документация API
+style: форматирование кода
+refactor: рефакторинг финансового модуля
+test: добавлены тесты для UserController
+chore: обновлены зависимости
+```
+
+## 🐛 Сообщения об ошибках
+
+При создании issue укажите:
+- Версию проекта
+- Шаги для воспроизведения
+- Ожидаемое поведение
+- Фактическое поведение
+- Скриншоты (если применимо)
+- Логи ошибок
+
+## ✨ Предложения новых функций
+
+Создайте issue с тегом `enhancement` и опишите:
+- Проблему, которую решает функция
+- Предлагаемое решение
+- Альтернативные варианты
+- Дополнительный контекст
+
+## 🧪 Тестирование
+
+Перед отправкой PR убедитесь:
+
+```bash
+# Backend тесты
+cd backend
+composer test
+
+# Frontend тесты
+cd frontend
+npm run test
+
+# E2E тесты
+npm run test:e2e
+
+# Линтинг
+npm run lint
+```
+
+## 📚 Документация
+
+При добавлении новых функций обновите:
+- README.md (если меняется API)
+- docs/api/ (для API endpoints)
+- docs/user-guide/ (для пользовательских функций)
+- docs/admin-guide/ (для админских функций)
+
+## ❓ Вопросы?
+
+Если у вас есть вопросы:
+- Создайте [Discussion](https://github.com/terpiloid111-ops/SKiss/discussions)
+- Напишите в Telegram: [Ваш Telegram]
+
+Спасибо за вклад! 🚀
