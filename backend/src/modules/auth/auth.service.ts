@@ -23,7 +23,10 @@ export class AuthService {
     });
     await this.userRepository.save(user);
     const token = this.jwtService.sign({ sub: user.id, email: user.email });
-    return { user, token };
+    
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, token };
   }
 
   async login(email: string, password: string) {
@@ -32,6 +35,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     const token = this.jwtService.sign({ sub: user.id, email: user.email });
-    return { user, token };
+    
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, token };
   }
 }
